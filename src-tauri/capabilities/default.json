@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Base capability. The UI is the remote (loopback) SPA and does not call Tauri APIs, so no extra permissions are granted to it.",
+  "windows": ["main", "splash"],
+  "permissions": ["core:default"]
+}

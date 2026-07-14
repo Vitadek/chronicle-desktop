@@ -1,0 +1,89 @@
+name: Build Chronicle Desktop (Flatpak)
+
+# Mirrors the core/android discipline: verify vendored sources are fresh, build
+# the Flatpak reproducibly, and on a signed v* tag verify the tag before
+# exporting a GPG-signed single-file bundle + SHA256SUMS.
+#
+# NOTE: needs a Forgejo Actions runner with Docker/flatpak-builder. The org
+# runner is currently unregistered, so this is validated once one is live; until
+# then, build locally (see README).
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  sources-fresh:
+    runs-on: docker
+    container:
+      image: node:22-bookworm
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@v4
+      - name: Vendored npm sources match the pinned core lockfile
+        run: bash scripts/check-sources-fresh.sh
+
+  flatpak:
+    runs-on: docker
+    needs: sources-fresh
+    container:
+      image: bilelmoussaoui/flatpak-github-actions:gnome-48
+      options: --privileged
+    env:
+      APP_ID: ink.chronicler.Chronicle
+      MANIFEST: flatpak/ink.chronicler.Chronicle.yml
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify a signed, canonical tag (stable releases only)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_GPG_PUBLIC_KEY: ${{ secrets.RELEASE_GPG_PUBLIC_KEY }}
+        run: |
+          set -eu
+          tag=${GITHUB_REF#refs/tags/}
+          echo "$tag" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+$' || { echo "tag must be vMAJOR.MINOR.PATCH" >&2; exit 1; }
+          [ -n "${RELEASE_GPG_PUBLIC_KEY:-}" ] || { echo "RELEASE_GPG_PUBLIC_KEY required" >&2; exit 1; }
+          export GNUPGHOME=$(mktemp -d)
+          printf '%s' "$RELEASE_GPG_PUBLIC_KEY" | gpg --batch --import
+          git verify-tag "$tag"
+
+      - name: Install runtime, SDK and extensions
+        run: |
+          flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+          flatpak --user install -y flathub org.gnome.Platform//48 org.gnome.Sdk//48 \
+            org.freedesktop.Sdk.Extension.rust-stable//24.08 \
+            org.freedesktop.Sdk.Extension.node22//24.08
+
+      - name: Build into an OSTree repo
+        run: |
+          flatpak-builder --user --disable-rofiles-fuse --force-clean \
+            --repo=repo build-dir "$MANIFEST"
+
+      - name: Export a single-file bundle + checksums
+        run: |
+          flatpak build-bundle repo "$APP_ID.flatpak" "$APP_ID"
+          sha256sum "$APP_ID.flatpak" > SHA256SUMS
+
+      - name: Sign the bundle (stable releases)
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          RELEASE_GPG_PRIVATE_KEY: ${{ secrets.RELEASE_GPG_PRIVATE_KEY }}
+        run: |
+          export GNUPGHOME=$(mktemp -d)
+          printf '%s' "$RELEASE_GPG_PRIVATE_KEY" | gpg --batch --import
+          gpg --batch --armor --detach-sign "$APP_ID.flatpak"
+
+      - name: Upload artifacts
+        uses: https://data.forgejo.org/forgejo/upload-artifact@v4
+        with:
+          name: chronicle-desktop-flatpak
+          path: |
+            ink.chronicler.Chronicle.flatpak
+            ink.chronicler.Chronicle.flatpak.asc
+            SHA256SUMS

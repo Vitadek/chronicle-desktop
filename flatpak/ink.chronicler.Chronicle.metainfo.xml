@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>ink.chronicler.Chronicle</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <name>Chronicle</name>
+  <summary>A self-contained studio for writing novels</summary>
+  <description>
+    <p>
+      Chronicle is a lightweight, offline-first writing studio for novelists. The
+      desktop app bundles the full Chronicle server and runs it privately on your
+      machine — your manuscripts live in a single local database, and nothing
+      leaves your computer.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Distraction-free chapter editor with autocomplete and tense checking</li>
+      <li>A plugin system for grammar, outlining, proofreading and more</li>
+      <li>Back up and restore your whole library as a single .chron file</li>
+    </ul>
+  </description>
+  <launchable type="desktop-id">ink.chronicler.Chronicle.desktop</launchable>
+  <url type="homepage">https://chronicler.ink</url>
+  <developer id="ink.chronicler">
+    <name>Chronicle</name>
+  </developer>
+  <content_rating type="oars-1.1" />
+  <releases>
+    <release version="0.1.0" date="2026-07-14">
+      <description>
+        <p>First desktop release: local single-user Chronicle with .chron backup and restore.</p>
+      </description>
+    </release>
+  </releases>
+</component>

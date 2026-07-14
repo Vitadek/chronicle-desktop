@@ -1,0 +1,25 @@
+[package]
+name = "chronicle-desktop"
+version = "0.1.0"
+description = "Chronicle — a self-contained desktop writing studio"
+authors = ["Chronicle"]
+edition = "2021"
+rust-version = "1.77"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+# Small blocking HTTP client, only for polling the sidecar's /readyz.
+ureq = "2"
+# SIGTERM the Node sidecar on exit so it checkpoints the WAL and closes cleanly.
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[profile.release]
+panic = "abort"
+codegen-units = 1
+lto = true
+opt-level = "s"
+strip = true

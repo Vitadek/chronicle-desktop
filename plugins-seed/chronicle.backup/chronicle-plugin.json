@@ -1,0 +1,11 @@
+{
+  "id": "chronicle.backup",
+  "name": "Backup & Restore",
+  "description": "Export your whole library to a .chron file and restore or bootstrap from one. Local/desktop installs only.",
+  "version": "1.0.0",
+  "entry": "src/index.tsx",
+  "minAppVersion": "0.1.0",
+  "provides": [
+    "settings:backup"
+  ]
+}

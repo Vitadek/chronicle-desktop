@@ -1,0 +1,93 @@
+# Flatpak manifest for the Chronicle desktop app.
+#
+# Builds the Tauri shell + bundles Chronicle's Node server as a sidecar. The
+# GNOME runtime is used (not freedesktop) because it ships webkit2gtk-4.1, which
+# Tauri's Linux webview requires.
+#
+# flatpak-builder builds OFFLINE, so BOTH toolchains are vendored:
+#   - Rust crates → cargo-sources.json   (flatpak-cargo-generator on Cargo.lock)
+#   - npm tree    → node-sources.json    (flatpak-node-generator on core's lock)
+# Regenerate both with scripts/gen-sources.sh whenever the pinned core commit or
+# Cargo.lock changes. See scripts/update-core.sh.
+#
+# Build locally:
+#   flatpak-builder --user --install --force-clean build-dir \
+#     flatpak/ink.chronicler.Chronicle.yml
+id: ink.chronicler.Chronicle
+runtime: org.gnome.Platform
+runtime-version: '48'
+sdk: org.gnome.Sdk
+sdk-extensions:
+  - org.freedesktop.Sdk.Extension.rust-stable
+  - org.freedesktop.Sdk.Extension.node22
+command: ink.chronicler.Chronicle
+finish-args:
+  # Loopback needs the network namespace; Flatpak has no loopback-only scope.
+  # Mitigated: the server binds 127.0.0.1 only, with no off-box surface.
+  - --share=network
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  # Only for the .chron / manuscript export-import file dialogs.
+  - --filesystem=xdg-documents
+  # The Tauri binary reads the server payload from here (see main.rs).
+  - --env=CHRONICLE_RESOURCE_DIR=/app/chronicle
+build-options:
+  append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
+  build-args:
+    # Vendored sources make the build hermetic; no module needs the network.
+    - --share=network
+modules:
+  # 1. The Node runtime shipped inside the app (a single glibc binary; the GNOME
+  #    runtime provides its shared libs). main.rs execs /app/chronicle/node.
+  - name: node-runtime
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 /usr/lib/sdk/node22/bin/node /app/chronicle/node
+
+  # 2. Build the Chronicle server from a pinned commit with vendored npm sources,
+  #    compiling better-sqlite3 from source against this runtime's glibc + Node.
+  - name: chronicle-server
+    buildsystem: simple
+    sources:
+      - type: git
+        url: https://forgejo.lan/protoman/chronicle.git
+        commit: 27e4a118e1b09b02e9f8fd08e285b7d3960575a6
+      # Vendored npm tarballs + offline cache setup (generated).
+      - node-sources.json
+    build-commands:
+      - npm ci --offline
+      - npm run build
+      - npm prune --omit=dev
+      - mkdir -p /app/chronicle
+      - cp -r dist node_modules package.json plugins-seed /app/chronicle/
+
+  # 3. Overlay the desktop-only seed plugins (Backup & Restore) onto the empty
+  #    core plugins-seed. Compiled on first boot into DATA_DIR/plugins.
+  - name: seed-plugins
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: ../plugins-seed
+    build-commands:
+      - mkdir -p /app/chronicle/plugins-seed
+      - cp -r chronicle.backup /app/chronicle/plugins-seed/
+
+  # 4. Build the Tauri shell offline against vendored crates and install it +
+  #    launcher + desktop/metainfo/icon.
+  - name: chronicle-desktop
+    buildsystem: simple
+    sources:
+      - type: dir
+        path: ..
+      # Vendored crates + .cargo/config.toml (generated).
+      - cargo-sources.json
+    build-commands:
+      - cargo --offline build --release --manifest-path src-tauri/Cargo.toml
+      - install -Dm755 src-tauri/target/release/chronicle-desktop /app/bin/ink.chronicler.Chronicle
+      - install -Dm644 flatpak/ink.chronicler.Chronicle.desktop
+          /app/share/applications/ink.chronicler.Chronicle.desktop
+      - install -Dm644 flatpak/ink.chronicler.Chronicle.metainfo.xml
+          /app/share/metainfo/ink.chronicler.Chronicle.metainfo.xml
+      - install -Dm644 src-tauri/icons/icon.png
+          /app/share/icons/hicolor/512x512/apps/ink.chronicler.Chronicle.png

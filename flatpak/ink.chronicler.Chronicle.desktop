@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Chronicle
+GenericName=Writing Studio
+Comment=A self-contained studio for writing novels
+Exec=ink.chronicler.Chronicle
+Icon=ink.chronicler.Chronicle
+Terminal=false
+Categories=Office;WordProcessor;
+Keywords=writing;novel;manuscript;author;editor;
+StartupNotify=true
+StartupWMClass=Chronicle
