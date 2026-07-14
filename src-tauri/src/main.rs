@@ -85,8 +85,10 @@ fn main() {
             let handle = app.handle().clone();
 
             // A splash window while the server boots (data: URL — no bundled
-            // frontend needed; the real UI is served by the sidecar).
-            let splash = WebviewWindowBuilder::new(
+            // frontend needed; the real UI is served by the sidecar). The window
+            // stays registered with the app; we close it by name once ready, so
+            // the builder handle itself isn't retained.
+            let _splash = WebviewWindowBuilder::new(
                 &handle,
                 "splash",
                 WebviewUrl::External(
