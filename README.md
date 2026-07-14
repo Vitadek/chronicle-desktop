@@ -75,6 +75,11 @@ source against the GNOME runtime's Node 22 + glibc (the published musl image can
 **GNOME** runtime is required (not freedesktop) because it ships `webkit2gtk-4.1`, which Tauri's
 Linux webview needs.
 
+The manifest targets the current **GNOME 50** runtime (freedesktop 25.08 base). When bumping the
+runtime, move all four in lockstep — `org.gnome.Platform`, `org.gnome.Sdk`, and both
+`sdk-extensions` — to the runtime whose freedesktop base matches (Flathub only serves supported
+pairs), so the app never ships on an EOL engine.
+
 ### Updating to a newer core
 
 ```bash

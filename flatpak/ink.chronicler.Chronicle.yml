@@ -15,10 +15,10 @@
 #     flatpak/ink.chronicler.Chronicle.yml
 id: ink.chronicler.Chronicle
 runtime: org.gnome.Platform
-# NOTE: GNOME 48 went EOL 2026-03. Bump to the current supported GNOME runtime
-# before a public release, matching the rust-stable/node22 extension base
-# (24.08 here). 48 is what the offline sources + local build were exercised on.
-runtime-version: '48'
+# GNOME 50 is on the freedesktop 25.08 base; the runtime, the SDK, and every
+# sdk-extension below must all share that base (Flathub only serves supported
+# pairs). Bump all four together when moving to a newer runtime.
+runtime-version: '50'
 sdk: org.gnome.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable

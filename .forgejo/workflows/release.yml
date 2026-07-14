@@ -30,7 +30,7 @@ jobs:
     runs-on: docker
     needs: sources-fresh
     container:
-      image: bilelmoussaoui/flatpak-github-actions:gnome-48
+      image: bilelmoussaoui/flatpak-github-actions:gnome-50
       options: --privileged
     env:
       APP_ID: ink.chronicler.Chronicle
@@ -56,9 +56,9 @@ jobs:
       - name: Install runtime, SDK and extensions
         run: |
           flatpak --user remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-          flatpak --user install -y flathub org.gnome.Platform//48 org.gnome.Sdk//48 \
-            org.freedesktop.Sdk.Extension.rust-stable//24.08 \
-            org.freedesktop.Sdk.Extension.node22//24.08
+          flatpak --user install -y flathub org.gnome.Platform//50 org.gnome.Sdk//50 \
+            org.freedesktop.Sdk.Extension.rust-stable//25.08 \
+            org.freedesktop.Sdk.Extension.node22//25.08
 
       - name: Build into an OSTree repo
         run: |
