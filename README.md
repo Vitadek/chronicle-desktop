@@ -57,17 +57,32 @@ Linux host or VM has both. An *unprivileged* LXC container (e.g. the default on 
 container. Pass `--disable-rofiles-fuse` when `/dev/fuse` is unavailable (the CI job and the
 example below already do). The CI container runs `--privileged` for exactly this reason.
 
+**One command (recommended):** `scripts/build-flatpak.sh` handles everything — installs the
+pinned runtime/SDK/extensions, builds, and exports an installable single-file bundle:
+
+```bash
+scripts/build-flatpak.sh --install     # build, install for this user, and emit the .flatpak bundle
+flatpak run ink.chronicler.Chronicle
+# other flags: --gen-sources (after a core bump), --sign <gpg-key>, --repo/--bundle paths
+```
+
+The bundle (`ink.chronicler.Chronicle.flatpak` + `.sha256`) can be installed anywhere
+(`flatpak install --user <file>`) or hosted as an OSTree repo — the script prints the options.
+
+<details><summary>Manual steps (what the script does)</summary>
+
 ```bash
 # 1. (first time / after a core bump) vendor the offline sources
 scripts/gen-sources.sh                 # → flatpak/{node,cargo}-sources.json
 
 # 2. build + install locally (--disable-rofiles-fuse if /dev/fuse is absent)
-flatpak-builder --user --install --force-clean --disable-rofiles-fuse build-dir \
-  flatpak/ink.chronicler.Chronicle.yml
+flatpak-builder --user --install --force-clean --disable-rofiles-fuse \
+  --install-deps-from=flathub build-dir flatpak/ink.chronicler.Chronicle.yml
 
 # 3. run
 flatpak run ink.chronicler.Chronicle
 ```
+</details>
 
 `flatpak-builder` builds **offline**, so the npm tree and Rust crates are vendored into
 `flatpak/node-sources.json` and `flatpak/cargo-sources.json`. `better-sqlite3` is compiled from
