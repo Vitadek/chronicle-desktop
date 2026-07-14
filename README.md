@@ -49,12 +49,20 @@ in-manifest.
 Requires `flatpak`, `flatpak-builder`, and
 [`flatpak-builder-tools`](https://github.com/flatpak/flatpak-builder-tools) on PATH.
 
+**Build environment:** flatpak-builder sandboxes each module with bubblewrap, which needs
+a **writable `/proc/sys/user/max_user_namespaces`** and (by default) **`/dev/fuse`**. A normal
+Linux host or VM has both. An *unprivileged* LXC container (e.g. the default on Proxmox) has
+`/proc/sys` mounted read-only and no `/dev/fuse`, so the build fails with
+`bwrap: cannot open /proc/sys/user/max_user_namespaces` — build on a real host/VM or a privileged
+container. Pass `--disable-rofiles-fuse` when `/dev/fuse` is unavailable (the CI job and the
+example below already do). The CI container runs `--privileged` for exactly this reason.
+
 ```bash
 # 1. (first time / after a core bump) vendor the offline sources
 scripts/gen-sources.sh                 # → flatpak/{node,cargo}-sources.json
 
-# 2. build + install locally
-flatpak-builder --user --install --force-clean build-dir \
+# 2. build + install locally (--disable-rofiles-fuse if /dev/fuse is absent)
+flatpak-builder --user --install --force-clean --disable-rofiles-fuse build-dir \
   flatpak/ink.chronicler.Chronicle.yml
 
 # 3. run

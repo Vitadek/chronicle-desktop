@@ -15,6 +15,9 @@
 #     flatpak/ink.chronicler.Chronicle.yml
 id: ink.chronicler.Chronicle
 runtime: org.gnome.Platform
+# NOTE: GNOME 48 went EOL 2026-03. Bump to the current supported GNOME runtime
+# before a public release, matching the rust-stable/node22 extension base
+# (24.08 here). 48 is what the offline sources + local build were exercised on.
 runtime-version: '48'
 sdk: org.gnome.Sdk
 sdk-extensions:
@@ -34,9 +37,13 @@ finish-args:
   - --env=CHRONICLE_RESOURCE_DIR=/app/chronicle
 build-options:
   append-path: /usr/lib/sdk/rust-stable/bin:/usr/lib/sdk/node22/bin
-  build-args:
-    # Vendored sources make the build hermetic; no module needs the network.
-    - --share=network
+  # Fully hermetic: all deps are vendored (node-sources.json + cargo-sources.json),
+  # so no build step gets the network. better-sqlite3 compiles from source with
+  # node-gyp against the SDK extension's bundled Node headers (no header
+  # download), which is why nodedir is pinned here.
+  env:
+    npm_config_nodedir: /usr/lib/sdk/node22
+    npm_config_offline: 'true'
 modules:
   # 1. The Node runtime shipped inside the app (a single glibc binary; the GNOME
   #    runtime provides its shared libs). main.rs execs /app/chronicle/node.
@@ -83,7 +90,9 @@ modules:
       # Vendored crates + .cargo/config.toml (generated).
       - cargo-sources.json
     build-commands:
-      - cargo --offline build --release --manifest-path src-tauri/Cargo.toml
+      # CARGO_HOME points at the vendored config/crates that cargo-sources.json
+      # unpacks into ./cargo (config replaces crates-io with ./cargo/vendor).
+      - CARGO_HOME="$PWD/cargo" cargo build --offline --release --manifest-path src-tauri/Cargo.toml
       - install -Dm755 src-tauri/target/release/chronicle-desktop /app/bin/ink.chronicler.Chronicle
       - install -Dm644 flatpak/ink.chronicler.Chronicle.desktop
           /app/share/applications/ink.chronicler.Chronicle.desktop
