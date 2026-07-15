@@ -43,7 +43,7 @@ fn free_loopback_port() -> u16 {
 /// lives at `$CHRONICLE_RESOURCE_DIR` when set — the Flatpak points this at
 /// `/app/chronicle`, decoupling it from Tauri's resource resolution — otherwise
 /// under the bundle's resource dir (the deb/AppImage/macOS/Windows path).
-fn resource_paths(app: &tauri::AppHandle) -> (PathBuf, PathBuf) {
+fn resource_paths(app: &tauri::AppHandle) -> (PathBuf, PathBuf, PathBuf) {
     let res = match std::env::var_os("CHRONICLE_RESOURCE_DIR") {
         Some(dir) => PathBuf::from(dir),
         None => app
@@ -58,7 +58,7 @@ fn resource_paths(app: &tauri::AppHandle) -> (PathBuf, PathBuf) {
     } else {
         res.join("node")
     };
-    (node, res.join("dist").join("server.cjs"))
+    (node, res.join("dist").join("server.cjs"), res)
 }
 
 /// Block until GET /readyz answers 200, or give up after ~30s.
@@ -107,11 +107,12 @@ fn main() {
             // so AUTH_MODE=none + HOST=127.0.0.1 is the intended secure path
             // (passes the server's fail-closed loopback check with no insecure
             // flag). LOCAL_ADMIN=true enables the .chron backup/restore routes.
-            let (node, server_cjs) = resource_paths(&handle);
+            let (node, server_cjs, res) = resource_paths(&handle);
             let data_dir = app.path().app_data_dir().expect("app data dir");
             std::fs::create_dir_all(&data_dir).ok();
 
             let child = Command::new(&node)
+                .current_dir(&res)
                 .arg(&server_cjs)
                 .env("NODE_ENV", "production")
                 .env("HOST", "127.0.0.1")
