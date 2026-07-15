@@ -30,7 +30,12 @@ jobs:
     runs-on: docker
     needs: sources-fresh
     container:
-      image: bilelmoussaoui/flatpak-github-actions:gnome-50
+      # This image is only the builder toolbox (flatpak + flatpak-builder). The
+      # actual GNOME 50 / freedesktop 25.08 runtime is installed from Flathub in
+      # the step below, so the tag just needs recent-enough tooling. The image's
+      # published GNOME tags top out at gnome-47; use gnome-nightly for current
+      # flatpak-builder (a newer flatpak installs newer runtimes fine).
+      image: bilelmoussaoui/flatpak-github-actions:gnome-nightly
       options: --privileged
     env:
       APP_ID: ink.chronicler.Chronicle
