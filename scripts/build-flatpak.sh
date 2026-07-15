@@ -62,8 +62,7 @@ if ! flatpak run --command=true org.gnome.Sdk//50 >/dev/null 2>&1; then
 fi
 
 # rofiles-fuse needs /dev/fuse; skip it when absent (a build hardening feature only).
-ROFILES=()
-[ -e /dev/fuse ] || { ROFILES=(--disable-rofiles-fuse); echo "note: /dev/fuse absent → --disable-rofiles-fuse"; }
+ROFILES=(--disable-rofiles-fuse)
 
 # --- Flathub remote (user scope) ---------------------------------------------
 flatpak --user remote-add --if-not-exists flathub \

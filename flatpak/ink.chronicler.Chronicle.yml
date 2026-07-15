@@ -14,6 +14,7 @@
 #   flatpak-builder --user --install --force-clean build-dir \
 #     flatpak/ink.chronicler.Chronicle.yml
 id: ink.chronicler.Chronicle
+appstream-compose: false
 runtime: org.gnome.Platform
 # GNOME 50 is on the freedesktop 25.08 base; the runtime, the SDK, and every
 # sdk-extension below must all share that base (Flathub only serves supported
@@ -63,9 +64,9 @@ modules:
       # Vendored npm tarballs + offline cache setup (generated).
       - node-sources.json
     build-commands:
-      - npm ci --offline
-      - npm run build
-      - npm prune --omit=dev
+      - npm ci --offline --cache="$PWD/flatpak-node/npm-cache"
+      - npm run build --cache="$PWD/flatpak-node/npm-cache"
+      - npm prune --omit=dev --cache="$PWD/flatpak-node/npm-cache"
       - mkdir -p /app/chronicle
       - cp -r dist node_modules package.json plugins-seed /app/chronicle/
 
@@ -92,6 +93,7 @@ modules:
     build-commands:
       # CARGO_HOME points at the vendored config/crates that cargo-sources.json
       # unpacks into ./cargo (config replaces crates-io with ./cargo/vendor).
+      - mkdir -p src-tauri/resources/chronicle
       - CARGO_HOME="$PWD/cargo" cargo build --offline --release --manifest-path src-tauri/Cargo.toml
       - install -Dm755 src-tauri/target/release/chronicle-desktop /app/bin/ink.chronicler.Chronicle
       - install -Dm644 flatpak/ink.chronicler.Chronicle.desktop
