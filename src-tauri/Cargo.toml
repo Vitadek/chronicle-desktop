@@ -10,7 +10,7 @@ rust-version = "1.77"
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-tauri = { version = "2", features = [] }
+tauri = { version = "2", features = ["webview-data-url"] }
 # Small blocking HTTP client, only for polling the sidecar's /readyz.
 ureq = "2"
 # SIGTERM the Node sidecar on exit so it checkpoints the WAL and closes cleanly.
